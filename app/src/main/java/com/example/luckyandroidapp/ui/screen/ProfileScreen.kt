@@ -10,17 +10,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
     val users by viewModel.users.collectAsState()
 
-    LaunchedEffect(Unit) {
-//        viewModel.fetchUsers()
-    }
-
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(text = "User List", style = MaterialTheme.typography.headlineMedium)
+
+        val navController = rememberNavController()
 
         LazyColumn {
             items(users) { user ->
