@@ -13,23 +13,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
-    val users by viewModel.users.collectAsState()
-
+fun ProfileScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(text = "User List", style = MaterialTheme.typography.headlineMedium)
 
         val navController = rememberNavController()
 
-        LazyColumn {
-            items(users) { user ->
-                Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = "user.name", style = MaterialTheme.typography.bodyLarge)
-                        Text(text = "user.email", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-        }
     }
 }

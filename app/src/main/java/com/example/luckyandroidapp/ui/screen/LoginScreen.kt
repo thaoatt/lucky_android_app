@@ -2,6 +2,7 @@ package com.example.luckyandroidapp.ui.screen
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.luckyandroidapp.MainActivity
 import com.example.luckyandroidapp.R
 import com.example.luckyandroidapp.ui.theme.fadedOrange
 import com.example.luckyandroidapp.ui.theme.primaryColor
@@ -57,6 +59,9 @@ import com.example.luckyandroidapp.viewmodels.LoginViewModel
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -76,19 +81,24 @@ fun LoginScreen() {
     var userName by remember { mutableStateOf(authClient.getUser()) }
 
     val signInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult()
+        contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val credential = Identity.getSignInClient(context).getSignInCredentialFromIntent(result.data)
-            val idToken = credential.googleIdToken
-            scope.launch {
-                val success = authClient.signInWithGoogle(idToken)
-                if (success) {
-                    userName = authClient.getUser()
-                } else {
-                    Log.e("GoogleSignIn", "Lỗi đăng nhập")
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            context.startActivity(Intent(context, MainActivity::class.java))
+            val account = task.getResult(ApiException::class.java)
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            FirebaseAuth.getInstance().signInWithCredential(credential)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        Log.d("GoogleSignIn", "Đăng nhập thành công: ${user?.email}")
+                    } else {
+                        Log.e("GoogleSignIn", "Lỗi xác thực Firebase: ${task.exception?.message}")
+                    }
                 }
-            }
+        } catch (e: ApiException) {
+            Log.e("GoogleSignIn", "Lỗi đăng nhập: ${e.message}")
         }
     }
 
@@ -111,7 +121,8 @@ fun LoginScreen() {
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
                     .padding(top = 60.dp)
             )
         }
@@ -194,7 +205,27 @@ fun LoginScreen() {
 
                 // Sign In Button with Gradient
                 Button(
-                    onClick = { /* Handle Sign In */ },
+                    onClick = {
+//                        val auth: FirebaseAuth = FirebaseAuth.getInstance()
+//                        auth.fetchSignInMethodsForEmail(email)
+//                            .addOnCompleteListener { task ->
+//                                if (task.isSuccessful) {
+//                                    val result = task.result
+//                                    if (result?.signInMethods?.isEmpty() == true) {
+//                                        authClient.createUserWithEmailPassword(email, password)
+//                                    } else {
+//                                        authClient.signInWithEmailPassword(email, password)
+//                                    }
+//                                } else {
+//                                    Toast.makeText(context, "Sign in failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+//                                }
+//                            }
+                        if (email.isNotBlank() && password.isNotBlank()) {
+                            authClient.signInWithEmailPassword(email, password)
+                        } else {
+                            Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -248,13 +279,10 @@ fun LoginScreen() {
                     ),
                     onClick = {
                         scope.launch {
-                            val signInIntent = authClient.signIn()
-                            signInIntent?.let { signInLauncher.launch(it) }
+                            authClient.googleSignInClient.signInIntent.let { signInLauncher.launch(it) }
                         }
                     }
                 )
-                //            Spacer(modifier = Modifier.height(10.dp))
-                //            SocialButton(text = "Sign In with Google", icon = painterResource(id = android.R.drawable.ic_menu_gallery), color = Color(0xFFDB4437))
             }
         }
     }
@@ -293,6 +321,14 @@ class GoogleAuthUiClient(
     private val oneTapClient: SignInClient
 ) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    val googleSignInClient = GoogleSignIn.getClient(
+        context,
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("AIzaSyCUyG3iYtc-DnHjWBBiVhbE8-6m661kljo")  // Thay bằng Web Client ID từ Firebase
+            .requestEmail()
+            .build()
+    )
+
 
     suspend fun signIn(): IntentSenderRequest? {
         return try {
@@ -324,6 +360,29 @@ class GoogleAuthUiClient(
             Log.e("GoogleAuthUiClient", "Lỗi xác thực Firebase", e)
             false
         }
+    }
+
+    fun createUserWithEmailPassword(email: String, password: String) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(context, "Sign up success", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Sign up failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+    }
+
+    fun signInWithEmailPassword(email: String, password: String) {
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(context, "Sign in success", Toast.LENGTH_SHORT).show()
+                    context.startActivity(Intent(context, MainActivity::class.java))
+                } else {
+                    Toast.makeText(context, "Sign in failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
     }
 
     fun signOut() {
