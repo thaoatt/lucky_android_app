@@ -66,6 +66,8 @@ dependencies {
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
 
+    implementation (libs.androidx.material)
+
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -85,6 +87,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.billing.ktx)
     kapt(libs.hilt.compiler)
 
     // Firebase
@@ -93,6 +96,8 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    implementation(libs.preference.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
