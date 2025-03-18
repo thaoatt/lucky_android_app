@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.preference.ktx)
 
     implementation(libs.lottie.compose)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
