@@ -80,28 +80,12 @@ fun LoginScreen() {
     val authClient = remember { GoogleAuthUiClient(context, oneTapClient) }
     var userName by remember { mutableStateOf(authClient.getUser()) }
 
-//    val signInLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.StartIntentSenderForResult()
-//    ) { result ->
-//        if (result.resultCode == Activity.RESULT_OK) {
-//            val credential = Identity.getSignInClient(context).getSignInCredentialFromIntent(result.data)
-//            val idToken = credential.googleIdToken
-//            scope.launch {
-//                val success = authClient.signInWithGoogle(idToken)
-//                if (success) {
-//                    userName = authClient.getUser()
-//                } else {
-//                    Log.e("GoogleSignIn", "Lỗi đăng nhập")
-//                }
-//            }
-//        }
-//    }
-
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
+            context.startActivity(Intent(context, MainActivity::class.java))
             val account = task.getResult(ApiException::class.java)
             val credential = GoogleAuthProvider.getCredential(account.idToken, null)
             FirebaseAuth.getInstance().signInWithCredential(credential)
@@ -238,8 +222,6 @@ fun LoginScreen() {
 //                            }
                         if (email.isNotBlank() && password.isNotBlank()) {
                             authClient.signInWithEmailPassword(email, password)
-                            email = ""
-                            password = ""
                         } else {
                             Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
                         }
@@ -301,8 +283,6 @@ fun LoginScreen() {
                         }
                     }
                 )
-                //            Spacer(modifier = Modifier.height(10.dp))
-                //            SocialButton(text = "Sign In with Google", icon = painterResource(id = android.R.drawable.ic_menu_gallery), color = Color(0xFFDB4437))
             }
         }
     }

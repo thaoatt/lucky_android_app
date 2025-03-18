@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +43,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         pref.isLogin = true
         setContent {
-            setContent {
+            MaterialTheme {
                 BottomNavApp()
             }
         }
@@ -65,7 +66,6 @@ sealed class Screen(val route: String, val title: String, val icon: Int) {
 @Composable
 fun BottomNavApp() {
     val navController = rememberNavController()
-
     Scaffold(
         bottomBar = { BottomNavigationBar(navController) },
     ) { paddingValues ->
@@ -78,7 +78,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     val screens = listOf(Screen.Home, Screen.History, Screen.Profile)
     val currentRoute = currentRoute(navController)
 
-    BottomNavigation(modifier = Modifier.navigationBarsPadding(), backgroundColor = Color.White) {
+    BottomNavigation(backgroundColor = Color.White) {
         screens.forEach { screen ->
             BottomNavigationItem(
                 icon = {
@@ -99,7 +99,8 @@ fun BottomNavigationBar(navController: NavHostController) {
                     )
                 },
                 selected = currentRoute == screen.route,
-                onClick = { navController.navigate(screen.route) }
+                onClick = { navController.navigate(screen.route) },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     }
