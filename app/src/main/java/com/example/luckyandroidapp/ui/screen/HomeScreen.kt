@@ -1,5 +1,8 @@
 package com.example.luckyandroidapp.ui.screen
 
+import android.annotation.SuppressLint
+import android.util.Log
+import android.widget.Space
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,14 +24,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -44,34 +50,76 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.luckyandroidapp.R
+import com.example.luckyandroidapp.model.GiftModel
 import com.example.luckyandroidapp.ui.theme.gold
 import com.example.luckyandroidapp.ui.theme.grayTextColor
 import com.example.luckyandroidapp.ui.theme.textColor
+import com.example.luckyandroidapp.utils.pref
+import com.example.luckyandroidapp.utils.receivedGiftList
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
-val imageGiftList = List(6) { R.drawable.img_ip_1 to 20 ; R.drawable.img_ip_2 to 10 ; R.drawable.img_ip_3 to 10; R.drawable.img_ip_4 to 30; R.drawable.img_ip_5 to 20; R.drawable.img_ip_6 to 10 }
-
-fun getRandomImageGift(): Int {
-    val weightList = imageGiftList.flatMap { (item, weight) -> List(weight) { item } }
-    return weightList.random()
-}
+val weightedList = listOf(
+    GiftModel(id = "1", image = R.drawable.img_ip_1, isMainGift = true, isPhoneCard = false) to 20,
+    GiftModel(id = "2", image = R.drawable.img_ip_2, isMainGift = true, isPhoneCard = false) to 20,
+    GiftModel(id = "3", image = R.drawable.img_ip_3, isMainGift = true, isPhoneCard = false) to 15,
+    GiftModel(id = "4", image = R.drawable.img_ip_4, isMainGift = true, isPhoneCard = false) to 10,
+    GiftModel(id = "5", image = R.drawable.img_ip_5, isMainGift = true, isPhoneCard = false) to 5,
+    GiftModel(id = "6", image = R.drawable.img_ip_6, isMainGift = true, isPhoneCard = false) to 5,
+    GiftModel(id = "", image = 0, isMainGift = false, isPhoneCard = false) to 25
+)
+@SuppressLint("MutableCollectionMutableState")
 @Composable
 fun HomeScreen() {
+    val context = LocalContext.current
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.open_box_lottie))
     val progress by animateLottieCompositionAsState(composition)
-    var freeTurn by remember { mutableStateOf(1) }
+    var freeTurn by remember { mutableStateOf(5) }
     var isShowDialog by remember { mutableStateOf(false) }
+    var isShowBuyTurnDialog by remember { mutableStateOf(false) }
     val images = List(6) { R.raw.orange_gift_box_lottie }
-    val weightList = imageGiftList.flatMap { (item, weight) -> List(weight) { item } }
 
+    val listType = object : TypeToken<List<GiftModel>>() {}.type
 
+    var receivedGiftList by remember {
+        mutableStateOf(mutableListOf<GiftModel>())
+    }
+
+    LaunchedEffect(Unit) {
+        if (context.pref.receivedGiftList.isNotBlank()) receivedGiftList.addAll(Gson().fromJson(context.pref.receivedGiftList, listType))
+    }
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
 
+        if (isShowBuyTurnDialog) {
+            BuyUnboxTurnDialog(
+                onClick = {
+                    isShowBuyTurnDialog = false
+                },
+                onClickClose = {
+                    isShowBuyTurnDialog = false
+                }
+            )
+        }
+
         if (isShowDialog) {
-            UnboxingAlertDialog(onClick = {
-                isShowDialog = false
-            }, imgResource = weightList.random())
+            val expandedList = weightedList.flatMap { (item, weight) -> List(weight) { item } }
+
+            val randomItem = expandedList.random()
+
+            UnboxingAlertDialog(
+                onClick = {
+                    isShowDialog = false
+                },
+                gift = randomItem
+            )
+
+            if (randomItem.id.isNotBlank()) {
+                receivedGiftList.add(randomItem)
+                context.pref.receivedGiftList = Gson().toJson(receivedGiftList)
+                Log.e("ThaoATT", "HomeScreen: received list = ${receivedGiftList.size}", )
+            }
         }
         Image(
             painter = painterResource(id = R.drawable.img_lucky_money_background), // Thay bằng ảnh trong drawable
@@ -86,13 +134,6 @@ fun HomeScreen() {
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.4f)) // Bóng mờ 50%
         )
-//        LottieAnimation(
-//            composition = composition,
-//            progress = progress,
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(200.dp)
-//        )
 
         Spacer(modifier = Modifier.height(40.dp))
         Image(
@@ -126,8 +167,12 @@ fun HomeScreen() {
             ) {
                 items(images.size) { index ->
                     LottieItem(images[index], onClick = {
-                        if (freeTurn >= 1) freeTurn -= 1
-                        isShowDialog = true
+                        if (freeTurn == 0) {
+                            isShowBuyTurnDialog = true
+                        } else {
+                            if (freeTurn >= 1) freeTurn -= 1
+                            isShowDialog = true
+                        }
                     })
                 }
             }
@@ -169,7 +214,59 @@ fun HomeScreen() {
 }
 
 @Composable
-fun UnboxingAlertDialog(onClick: () -> Unit, imgResource: Int) {
+fun BuyUnboxTurnDialog(onClick: () -> Unit, onClickClose: () -> Unit) {
+    AlertDialog(
+        shape = RoundedCornerShape(20.dp),
+        onDismissRequest = {
+            onClickClose()
+        },
+        buttons = {
+            Column (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "HẾT LƯỢT RỒI", color = Color.Black,
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                    fontFamily = FontFamily.Serif,
+                )
+                Text(
+                    "Hãy mua thêm lượt để tiếp tục nhé!",
+                    color = Color.Black,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                    fontFamily = FontFamily.Serif,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .background(
+                            shape = RoundedCornerShape(12.dp),
+                            color = gold
+                        )
+                        .clickable {
+                            onClick()
+                        }
+                ) {
+                    Text(
+                        "Thêm lượt đập hộp",
+                        color = Color.Black,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                        fontFamily = FontFamily.Serif,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun UnboxingAlertDialog(onClick: () -> Unit, gift: GiftModel) {
     AlertDialog(
         onDismissRequest = { onClick() },
         shape = RoundedCornerShape(20.dp),
@@ -195,19 +292,21 @@ fun UnboxingAlertDialog(onClick: () -> Unit, imgResource: Int) {
                                 onClick()
                             }
                     )
-                    Text(
-                        "Chúc mừng bạn đã nhận được",
-                        color = Color.Black,
-                        fontSize = 20.sp,
-                        textAlign = TextAlign.Center,
-                        fontFamily = FontFamily.Serif,
-                        modifier = Modifier
-                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                            .fillMaxWidth()
-                    )
+                    if (gift.image != 0) {
+                        Text(
+                            "Chúc mừng bạn đã nhận được",
+                            color = Color.Black,
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                            fontFamily = FontFamily.Serif,
+                            modifier = Modifier
+                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                                .fillMaxWidth()
+                        )
+                    }
 
                     Image(
-                        painter = painterResource(id = imgResource),
+                        painter = painterResource(id = if (gift.id.isNotBlank()) gift.image else R.drawable.img_cry_face),
                         contentDescription = null,
                         modifier = Modifier
                             .size(100.dp)
@@ -215,7 +314,7 @@ fun UnboxingAlertDialog(onClick: () -> Unit, imgResource: Int) {
                     )
 
                     Text(
-                        "MẢNH GHÉP 1",
+                        if (gift.image != 0) "MẢNH GHÉP ${gift.id}" else "TIẾC QUÁ!",
                         color = textColor,
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center,
@@ -227,7 +326,7 @@ fun UnboxingAlertDialog(onClick: () -> Unit, imgResource: Int) {
                     )
 
                     Text(
-                        "Thu thập đủ 6 mảnh ghép để nhận quà",
+                        if (gift.isMainGift) "Thu thập đủ 6 mảnh ghép để nhận quà" else "Chúc bạn may mắn lần sau nhé",
                         color = grayTextColor,
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,

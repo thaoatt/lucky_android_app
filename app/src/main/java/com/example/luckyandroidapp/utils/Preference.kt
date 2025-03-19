@@ -9,7 +9,7 @@ private const val IS_LOGIN = "is_login"
 private const val IS_REGISTERED = "is_registered"
 private const val PREFETCH_IMAGE_ENABLED = "prefetch_images"
 private const val DARK_THEME_MODE = "dark_theme"
-private const val IS_FIRST_BOOT = "is_first_boot"
+private const val RECEIVED_GIFT_LIST = "received_gift_list"
 private const val HOME_LAST_CACHED_DATE = "home_last_cached_date"
 private const val IS_VERTICAL_VIEWER = "is_vertical_viewer"
 private const val LAST_VERSION = "last_version"
@@ -25,9 +25,9 @@ var SharedPreferences.isLogin: Boolean
     get() = getBoolean(IS_LOGIN, false)
     set(value) = edit().putBoolean(IS_LOGIN, value).apply()
 
-var SharedPreferences.isFirstBoot: Boolean
-    get() = getBoolean(IS_FIRST_BOOT, true)
-    set(value) = edit().putBoolean(IS_FIRST_BOOT, value).apply()
+var SharedPreferences.receivedGiftList: String
+    get() = getString(RECEIVED_GIFT_LIST, "") ?: ""
+    set(value) = edit().putString(RECEIVED_GIFT_LIST, value).apply()
 
 var SharedPreferences.lastVersion: Int
     get() = getInt(LAST_VERSION, 1)
