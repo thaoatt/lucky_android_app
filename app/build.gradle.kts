@@ -102,6 +102,9 @@ dependencies {
     implementation(libs.lottie.compose)
     implementation(libs.coil.compose)
 
+    implementation(libs.play.services.wallet)
+    implementation(libs.compose.pay.button)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

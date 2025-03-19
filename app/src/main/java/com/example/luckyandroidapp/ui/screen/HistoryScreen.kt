@@ -1,9 +1,10 @@
 package com.example.luckyandroidapp.ui.screen
 
-import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,32 +15,29 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.luckyandroidapp.model.GiftModel
+import com.example.luckyandroidapp.ui.theme.grayTextColor
 import com.example.luckyandroidapp.ui.theme.textColor
 import com.example.luckyandroidapp.ui.theme.white
 import com.example.luckyandroidapp.utils.pref
 import com.example.luckyandroidapp.utils.receivedGiftList
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlin.math.log
 
 @Composable
 fun HistoryScreen() {
@@ -61,7 +59,8 @@ fun HistoryScreen() {
         state = listState,
         modifier = Modifier
             .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+
     ) {
         itemsIndexed(receivedGiftList.reversed()) { index, item ->
             HistoryItem(item)
@@ -80,7 +79,9 @@ fun HistoryItem(model: GiftModel) {
         modifier = Modifier
             .fillMaxWidth()
             .background(color = white)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
             // Title
@@ -99,13 +100,13 @@ fun HistoryItem(model: GiftModel) {
             )
         }
 
-        Log.e("ThaoATT", "HistoryItem: ${model.image}", )
-//        Image(
-//            painter = painterResource(id = model.image),
-//            modifier = Modifier
-//                .height(60.dp)
-//                .width(45.dp),
-//            contentDescription = null,
-//        )
+        Image(
+            painter = painterResource(id = model.image),
+            modifier = Modifier
+                .height(60.dp)
+                .width(45.dp),
+            contentDescription = null,
+            alignment = Alignment.BottomEnd,
+        )
     }
 }

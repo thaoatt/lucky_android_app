@@ -2,6 +2,7 @@ package com.example.luckyandroidapp.utils
 
 import android.app.Activity
 import android.app.Application
+import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -29,6 +30,8 @@ object BillingController : BillingClientStateListener {
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     private var inAppProductIdList: List<String> = listOf()
+    private var productIDs = listOf<String>()
+    var productDetails: List<ProductDetails>? = null
     var onItemPurchased: (Purchase, String) -> Unit = { _, _ -> }
     var onItemConsumed: (ProductDetails) -> Unit = {}
 
@@ -37,9 +40,30 @@ object BillingController : BillingClientStateListener {
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
                 coroutineScope.launch {
+                    if (inAppProductIdList.isEmpty()) {
+                        val inAppList = productIDs.map {
+                            QueryProductDetailsParams.Product.newBuilder()
+                                .setProductId(it)
+                                .setProductType(BillingClient.ProductType.INAPP)
+                                .build()
+                        }
+                        inAppProductIdList = billingClient
+                            .queryProductDetails(
+                                QueryProductDetailsParams.newBuilder()
+                                    .setProductList(inAppList)
+                                    .build()
+                            )
+                            .productDetailsList?.map { it.productId } ?: listOf()
+                    }
 
+                    purchases
+                        ?.filterNot { it.isAcknowledged }
+                        ?.forEach { purchase ->
+                            onItemPurchased(purchase, BillingClient.ProductType.INAPP)
+                        }
                 }
             }
+
             else -> {}
         }
     }

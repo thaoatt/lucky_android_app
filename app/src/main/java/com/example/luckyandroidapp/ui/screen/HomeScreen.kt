@@ -1,8 +1,10 @@
 package com.example.luckyandroidapp.ui.screen
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.util.Log
 import android.widget.Space
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,9 +27,12 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,48 +54,120 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.ProductDetails
 import com.example.luckyandroidapp.R
 import com.example.luckyandroidapp.model.GiftModel
+import com.example.luckyandroidapp.ui.common.dialog.NoticeDialog
 import com.example.luckyandroidapp.ui.theme.gold
 import com.example.luckyandroidapp.ui.theme.grayTextColor
 import com.example.luckyandroidapp.ui.theme.textColor
+import com.example.luckyandroidapp.utils.BillingController
+import com.example.luckyandroidapp.utils.getActivity
 import com.example.luckyandroidapp.utils.pref
 import com.example.luckyandroidapp.utils.receivedGiftList
+import com.example.luckyandroidapp.utils.toast
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 val weightedList = listOf(
     GiftModel(id = "1", image = R.drawable.img_ip_1, isMainGift = true, isPhoneCard = false) to 20,
     GiftModel(id = "2", image = R.drawable.img_ip_2, isMainGift = true, isPhoneCard = false) to 20,
     GiftModel(id = "3", image = R.drawable.img_ip_3, isMainGift = true, isPhoneCard = false) to 15,
     GiftModel(id = "4", image = R.drawable.img_ip_4, isMainGift = true, isPhoneCard = false) to 10,
-    GiftModel(id = "5", image = R.drawable.img_ip_5, isMainGift = true, isPhoneCard = false) to 5,
-    GiftModel(id = "6", image = R.drawable.img_ip_6, isMainGift = true, isPhoneCard = false) to 5,
+    GiftModel(id = "5", image = R.drawable.img_ip_5, isMainGift = true, isPhoneCard = false) to 7,
+    GiftModel(id = "6", image = R.drawable.img_ip_6, isMainGift = true, isPhoneCard = false) to 3,
     GiftModel(id = "", image = 0, isMainGift = false, isPhoneCard = false) to 25
 )
+
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.open_box_lottie))
     val progress by animateLottieCompositionAsState(composition)
-    var freeTurn by remember { mutableStateOf(5) }
+    var freeTurn by remember { mutableIntStateOf(1) }
     var isShowDialog by remember { mutableStateOf(false) }
     var isShowBuyTurnDialog by remember { mutableStateOf(false) }
+    var isShowNoticeDialog by remember { mutableStateOf(false) }
     val images = List(6) { R.raw.orange_gift_box_lottie }
-
+    val billingError by BillingController.billingResponseCode.collectAsState(initial = null)
+    val activity = context.getActivity()
+    val coroutineScope = rememberCoroutineScope()
     val listType = object : TypeToken<List<GiftModel>>() {}.type
 
-    var receivedGiftList by remember {
+    val receivedGiftList by remember {
         mutableStateOf(mutableListOf<GiftModel>())
     }
 
+    LaunchedEffect(billingError) {
+        when (billingError) {
+            BillingClient.BillingResponseCode.OK -> {
+                context.toast("Purchase successful")
+                freeTurn += 1
+            }
+
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+                Toast.makeText(context, "The purchase was cancelled", Toast.LENGTH_SHORT).show()
+            }
+
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> {
+                Toast.makeText(context, "Cannot connect to Play Store", Toast.LENGTH_SHORT).show()
+            }
+
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                Toast.makeText(context, "This is an item you already own", Toast.LENGTH_SHORT)
+                    .show()
+            }
+
+            BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> {
+                Toast.makeText(context, "This item is currently unavailable", Toast.LENGTH_SHORT)
+                    .show()
+            }
+
+            else -> {
+                Toast.makeText(context, "An error has occurred", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
-        if (context.pref.receivedGiftList.isNotBlank()) receivedGiftList.addAll(Gson().fromJson(context.pref.receivedGiftList, listType))
+        if (context.pref.receivedGiftList.isNotBlank()) receivedGiftList.addAll(
+            Gson().fromJson(
+                context.pref.receivedGiftList,
+                listType
+            )
+        )
     }
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+
+        if (isShowNoticeDialog) {
+            NoticeDialog(
+                title = "Thông báo",
+                message = "Bạn cần trả phí để sử dụng tính năng này.\nThực hiện thanh toán để nhận thêm 3 lượt đập hộp. Click \"Mua ngay\" để bắt đầu",
+                textPositiveButton = "Mua ngay",
+                onClickCloseButton = {
+                    isShowNoticeDialog = false
+                },
+                onClickAcceptButton = {
+                    coroutineScope.launch {
+                        val inAppItemProductDetail = BillingController
+                            .queryProductDetails(listOf(""))
+                            ?.first()
+                        inAppItemProductDetail?.let {
+                            activity?.let { activity ->
+                                BillingController.purchase(activity, it)
+                            }
+                        }
+                    }
+                    isShowNoticeDialog = false
+                }
+            )
+        }
 
         if (isShowBuyTurnDialog) {
             BuyUnboxTurnDialog(
@@ -118,7 +195,6 @@ fun HomeScreen() {
             if (randomItem.id.isNotBlank()) {
                 receivedGiftList.add(randomItem)
                 context.pref.receivedGiftList = Gson().toJson(receivedGiftList)
-                Log.e("ThaoATT", "HomeScreen: received list = ${receivedGiftList.size}", )
             }
         }
         Image(
@@ -182,8 +258,8 @@ fun HomeScreen() {
                     .padding(bottom = 24.dp, top = 20.dp)
                     .background(Color.White.copy(alpha = 0.8f), shape = RoundedCornerShape(16.dp))
                     .clickable {
-                        if (freeTurn < 0) {
-                            // open google pay
+                        if (freeTurn == 0) {
+                            isShowNoticeDialog = true
                         }
                     }
             ) {
@@ -221,7 +297,7 @@ fun BuyUnboxTurnDialog(onClick: () -> Unit, onClickClose: () -> Unit) {
             onClickClose()
         },
         buttons = {
-            Column (
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 20.dp),
@@ -353,8 +429,8 @@ fun LottieItem(animationRes: Int, onClick: () -> Unit) {
         composition = composition,
         progress = progress,
         modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
+            .width(100.dp)
+            .height(100.dp)
             .clickable(onClick = {
                 onClick()
             })

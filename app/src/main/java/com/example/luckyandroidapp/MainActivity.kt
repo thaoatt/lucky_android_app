@@ -32,6 +32,7 @@ import com.example.luckyandroidapp.ui.screen.HistoryScreen
 import com.example.luckyandroidapp.ui.screen.HomeScreen
 import com.example.luckyandroidapp.ui.screen.ProfileScreen
 import com.example.luckyandroidapp.ui.theme.primaryColor
+import com.example.luckyandroidapp.utils.BillingController
 import com.example.luckyandroidapp.utils.isLogin
 import com.example.luckyandroidapp.utils.pref
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,6 +48,11 @@ class MainActivity : ComponentActivity() {
                 BottomNavApp()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        BillingController.restorePurchases()
     }
 }
 

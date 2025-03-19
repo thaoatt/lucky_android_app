@@ -2,6 +2,7 @@ package com.example.luckyandroidapp
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import com.android.billingclient.api.Purchase
 import com.example.luckyandroidapp.utils.BillingController
@@ -42,7 +43,7 @@ class App : Application() {
         }
         BillingController.onItemConsumed = { productDetails ->
             productDetails.oneTimePurchaseOfferDetails?.let { offerDetails ->
-
+                Log.e("BillingDetail", "onItemConsumed: - ${productDetails.productId} - ${offerDetails.priceCurrencyCode}", )
             }
         }
         BillingController.init(this)
