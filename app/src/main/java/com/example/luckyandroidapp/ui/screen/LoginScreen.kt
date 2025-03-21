@@ -324,7 +324,7 @@ class GoogleAuthUiClient(
     val googleSignInClient = GoogleSignIn.getClient(
         context,
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("AIzaSyCUyG3iYtc-DnHjWBBiVhbE8-6m661kljo")  // Thay bằng Web Client ID từ Firebase
+            .requestIdToken("81088554275-sidjq4i04jbsqk2b9mr3v5afvdv0vhno.apps.googleusercontent.com")  // Thay bằng Web Client ID từ Firebase
             .requestEmail()
             .build()
     )

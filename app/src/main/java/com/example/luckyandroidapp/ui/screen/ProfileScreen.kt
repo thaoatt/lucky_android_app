@@ -1,7 +1,7 @@
 package com.example.luckyandroidapp.ui.screen
 
+import android.content.Intent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,10 +18,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,15 +33,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.luckyandroidapp.LoginActivity
+import com.example.luckyandroidapp.MainActivity
 import com.example.luckyandroidapp.R
-import com.example.luckyandroidapp.ui.theme.gold
 import com.example.luckyandroidapp.ui.theme.grayTextColor
 import com.example.luckyandroidapp.ui.theme.primaryColor
 import com.example.luckyandroidapp.ui.theme.textColor
+import com.google.firebase.auth.FirebaseAuth
 
 @Preview
 @Composable
 fun ProfileScreen() {
+    val context = LocalContext.current
+    val user by remember {
+        mutableStateOf(FirebaseAuth.getInstance().currentUser)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -48,7 +59,7 @@ fun ProfileScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.gardenersworld.com%2Fplants%2Fdifferent-types-of-flowers-to-grow%2F&psig=AOvVaw09YhuN1pJKfvEaOrA0g-tO&ust=1742401175091000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOjNmqyElIwDFQAAAAAdAAAAABAE",
+                model = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/960px-Lotus_flower_%28978659%29.jpg",
                 contentDescription = "Profile Image",
                 modifier = Modifier
                     .size(100.dp)
@@ -59,7 +70,12 @@ fun ProfileScreen() {
 
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Text("User name", color = textColor, fontWeight = FontWeight.Bold, fontSize = 32.sp)
+            Text(
+                user?.displayName ?: "No name",
+                color = textColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp
+            )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -72,7 +88,7 @@ fun ProfileScreen() {
             )
 
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Phone number", color = grayTextColor, fontSize = 14.sp)
+            Text(user?.phoneNumber ?: "", color = grayTextColor, fontSize = 14.sp)
         }
 
         Row(
@@ -86,11 +102,14 @@ fun ProfileScreen() {
             )
 
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Email", color = grayTextColor, fontSize = 14.sp)
+            Text(user?.email ?: "", color = grayTextColor, fontSize = 14.sp)
         }
 
         HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
-        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Column(
                 modifier = Modifier.fillMaxWidth(0.5f),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -122,7 +141,7 @@ fun ProfileScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "$140.000",
+                    "10.000",
                     color = textColor,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
@@ -130,7 +149,7 @@ fun ProfileScreen() {
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Wallet",
+                    "Coin",
                     color = textColor,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp),
@@ -139,12 +158,29 @@ fun ProfileScreen() {
             }
         }
 
-        HorizontalDivider(modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp))
-        ProfileItem(onClick = { /*TODO*/ }, text = "Thanh toán", icon = R.drawable.img_wallet, isLogout = false)
-        ProfileItem(onClick = { /*TODO*/ }, text = "Cài đặt", icon = R.drawable.img_setting, isLogout = false)
-        ProfileItem(onClick = { /*TODO*/ }, text = "Đăng xuất", icon = R.drawable.img_turn_off, isLogout = true)
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+        )
+        ProfileItem(
+            onClick = { /*TODO*/ },
+            text = "Thanh toán",
+            icon = R.drawable.img_wallet,
+            isLogout = false
+        )
+        ProfileItem(
+            onClick = { /*TODO*/ },
+            text = "Cài đặt",
+            icon = R.drawable.img_setting,
+            isLogout = false
+        )
+        ProfileItem(onClick = {
+            FirebaseAuth.getInstance().signOut()
+            val intent = Intent(context, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            context.startActivity(intent)
+        }, text = "Đăng xuất", icon = R.drawable.img_turn_off, isLogout = true)
     }
 
 }
